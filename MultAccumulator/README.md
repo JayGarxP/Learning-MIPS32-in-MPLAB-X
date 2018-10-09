@@ -1,6 +1,6 @@
 Lab 2 – Multiplication Accumulation of
 		   two same-size arrays with MIPS 32
- ##Overview:
+ ### Overview:
 		Lab2.S is a MIPS-32 1 assembly program 
 		for PIC32 microcontrollers
 		running inside the simulator inside MPLAB X IDE
@@ -42,6 +42,6 @@ Lab 2 – Multiplication Accumulation of
 
 
 
-## PSEUDOCODE
+### PSEUDOCODE
 	Accumulated Value = X[0] * Y[0] + X[1] * Y[1] ... for N times
 	All values are ints, N >= 0; Not allowed to use MUL instruction
