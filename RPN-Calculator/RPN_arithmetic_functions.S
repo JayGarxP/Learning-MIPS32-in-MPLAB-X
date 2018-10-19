@@ -109,19 +109,40 @@ RPN_multiply:
   addi t3, zero, 1	//placing a 1 into t3 as a conditional control
   addu t2, a0, zero	//taking a copy of x; let's call it temp
   
-  //Checky if a1, y, is == 1; to skip repeated addition
+  //Check if a1, y, is == 1; to skip repeated addition
   beq a1, t3, y_param_one
   nop
   
+  //reset $t4 negative param 'flag'
+  move t4, zero
+  //Check if a1, y, is <0; to cast it to absolute value, then make product -neg
+  bgtz a1, mult_loop
+  nop
+  abs a1, a1 // `abs` pseudoinstruction is valid mips, but shows in wrong color
+  ori t4, zero, 808 //put 808 flag into
+  //fall-thru to mult_loop
+  
   //Also can't handle negative numbers at all...
-  //Still has bugs if either is 0 AND the bug where is y <=one loop is endless
 mult_loop:
   addu t2, t2, a0	// temp = temp + x
   addiu a1, a1, -1	// y = y - 1
-  beq a1, t3, operation_done
+  beq a1, t3, mult_operation_done
   nop
   j mult_loop
   nop
+  
+  mult_operation_done:
+    //set $t5 flag to 808 to check $t4
+    ori t5, zero, 808
+    bne t4, t5, operation_done
+    nop
+    
+    //negative param y, subtract $t2 from 0 to make $t2 -neg 
+    sub t2, zero, t2
+    
+    
+    j operation_done
+    nop
   
   //x or y was a 0, so just set t2 to zero and leave
   zero_param:
