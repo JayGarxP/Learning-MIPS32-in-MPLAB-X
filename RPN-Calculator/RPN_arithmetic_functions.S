@@ -8,26 +8,69 @@
 
 .ent RPN_arithmetic_operation
 RPN_arithmetic_operation:
-  //creating stack frame
-  addiu sp, sp, -8  //making room for two words; $ra and $fp ;
-		    // downwards into lower memory addresses ;
-		 //$sp is now two words lower than it was before this function.
-		    
-  sw ra, 4(sp)	    //store $ra value into $sp+one word;
-		    // backup into higher memory addresses with positive offset.
-  sw fp, 0(sp)	    //store caller $fp at bottom of our stack.
-  //local variables would be allocated here;
-  //	you would need to increase the $sp offset for each word variable above,
-  //	and when this function exits, need to snap $sp back by the same offset
-  addu fp, sp, zero //sets the bottom of our frame. $fp = new $sp
-
-  //Store param registers already-allocated in main's stack frame
-  sw a0, 8(fp)  //x
-  sw a1, 12(fp) //y
-  sw a2, 16(fp) //function op code; *, +, -
-  
+//  //creating stack frame; error here was off by one word in the hardcoded offset
+//  // memory addresses are inclusive on one side exclusive on the other;
+//  //	negative offset switches this. This is why every textbook has different
+//  //	diagrams in them as to where a pointer actually points.
+//  addiu sp, sp, -8  //making room for two words; $ra and $fp ;
+//		    // downwards into lower memory addresses ;
+//		 //$sp is now two words lower than it was before this function.
+//		    
+//  sw ra, 4(sp)	    //store $ra value into $sp+one word;
+//		    // backup into higher memory addresses with positive offset.
+//  sw fp, 0(sp)	    //store caller $fp at bottom of our stack.
+//  //local variables would be allocated here;
+//  //	you would need to increase the $sp offset for each word variable above,
+//  //	and when this function exits, need to snap $sp back by the same offset
+//  addu fp, sp, zero //sets the bottom of our frame. $fp = new $sp
+//
+//  //Store param registers already-allocated in main's stack frame
+//  sw a0, 12(fp)  //x   //NOT 8 which is what you would think...
+//  sw a1, 16(fp) //y
+//  sw a2, 20(fp) //function op code; *, +, -
+//  
+//  //end of stack frame construction
+//  
+//  /* current state of the stack frame
+//     /----------------------/
+//     |          ra          | 20
+//     /----------------------/
+//     |          fp          | 16
+//     /----------------------/ 
+//     |  room for a3         | 12
+//     /----------------------/ 
+//     |  room for a2         |  8 //8 INclusive to 12 EXclusive
+//     /----------------------/ 
+//     |  room for a1         |  4
+//     /----------------------/ 
+//     |  room for a0         |  0   $sp on enter; $fp on enter.      (12)
+//     /----------------------/
+//     |  RPN $ra	            |  -4                                   (8)
+//     /----------------------/
+//     |  RPN $fp	            |  -8 //-8 exclusive to -4 inclusive    (4)
+//     /----------------------/
+//     ---------->$sp and $fp
+//     |  next 'open' mem space| -12				    (0)
+//     /----------------------/
+//     
+//    */
+ 
+    //This is working; changing the $fp early ruins everything; can't even 
+    // debug this horrible mistake...
+  addiu sp, sp, -8  //making room for two things!
+  sw ra, 4(sp)
+  sw fp, 0(sp)
+  //oh look! parameters! better save em!
+  //important note: I saved the a register parameters before moving the
+  //frame pointer, because there's no telling how much motion the stack
+  //pointer saw before entering execution into this function
+  sw a0, 0(fp)
+  sw a1, 4(fp)
+  sw a2, 8(fp)
+  //that's right. I just reached OUT of my frame, and saved off some data
+  addu fp, sp, zero //sets the bottom of our frame
   //end of stack frame construction
-  
+    
  //Branch to correct function depending on $t7 value
  ori t0, zero, 2  // $t0 == MULT == 2
  ori t1, zero, 1  // $t1 == SUB == 1
@@ -44,7 +87,7 @@ RPN_arithmetic_operation:
 operation_done:
   addu v0, t2, zero
   
-    //Return stack frame to former glory
+  //Return stack frame to former glory
   addu sp, fp, zero	//snap the sp back to the bottom of the frame
   lw fp, 0(sp)          //restore the fp of the calling function
   lw ra, 4(sp)          //restore the ra of the calling function

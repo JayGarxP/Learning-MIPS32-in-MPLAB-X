@@ -58,8 +58,13 @@
 ////Postfix: 3,4, *, 5, -   = 7
 //  EXPR: .word 3,4,0x80000000 + '*',5,0x80000000 + '-',0x80000000 + '='    
 ////WORKS == 7
-  
-  
+
+  //infix: 3+4 + (5+6)
+  //postfix: 3 4 + 5 6 + +
+EXPR:	.word 3,4,0x80000000 + '+'
+	.word 5,6,0x80000000 + '+'
+	.word 0x80000000 + '+',0x80000000 + '='    
+//= 7+11 = 18? //getting 16???
      //Stored in $s7 for debugging purposes
 LAB3_RESULT: .word 0
    
@@ -156,8 +161,10 @@ operator_hit:
     nop
     jal RPN_arithmetic_operation
     nop
-    //push return value from $v0, the product, onto 'stack' 
+    //push return value from $v0, the product/sum/difference, onto 'stack' 
     PUSH v0
+    //POOSH v0 //test to see if this fixes $sp off by one bug, didint ...
+
 // fall thru to increment_expr_pointer
     nop
     //EXPR[s0]
