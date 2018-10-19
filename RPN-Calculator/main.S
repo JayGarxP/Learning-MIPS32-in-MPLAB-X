@@ -33,15 +33,33 @@
      */
     
     //Left to Right (postfix) Reverse Polish Notation (RPN)
-    //Mips green sheet says to grow stack downwards LIFO; == 13
-//EXPR: .word 3,4, 0x80000000 + '*',5,6, 0x80000000 + '-',0x80000000 + '+', 0x80000000 + '='    
-    //     (4*3) + (6-5)       
-    //13 =
+    //Mips green sheet says to grow stack downwards LIFO; == 11
+//EXPR: .word 3,4,0x80000000 + '*',5,6,0x80000000 + '-',0x80000000 + '+',0x80000000 + '='    
+    //     (3*4) + (5-6)       
+    //11 =
+ 
+    //Just subtraction WORKS
+  // EXPR: .word 5,6,0x80000000 + '-',0x80000000 + '='    
+//subtraction order is left to right, {5, 6, -} == {5-6}
+    //5-6 = -1
     
-EXPR: .word 3,4, 0x80000000 + '*', 0x80000000 + '='    // = 12
+    //Just addition WORKS
+//EXPR: .word 5,6,0x80000000 + '+',0x80000000 + '=' //=11
 
-    
-    
+  //Just Multiplication WORKS
+  //EXPR: .word 5,6,0x80000000 + '*',0x80000000 + '=' //=30
+
+////infix: (3*4) + 5 = 17
+////Postfix: 3,4, *, 5, +   = 17
+//  EXPR: .word 3,4,0x80000000 + '*',5,0x80000000 + '+',0x80000000 + '='    
+////WORKS == 17
+
+////infix: (3*4) - 5 = 7
+////Postfix: 3,4, *, 5, -   = 7
+//  EXPR: .word 3,4,0x80000000 + '*',5,0x80000000 + '-',0x80000000 + '='    
+////WORKS == 7
+  
+  
      //Stored in $s7 for debugging purposes
 LAB3_RESULT: .word 0
    
@@ -105,43 +123,43 @@ loop_eval_symbol:
     //$s1 = RPN symbol;	    $s1 = EXPR[$s0];
     lw s1, 0(s0)
    
-    
 //Check if $s1 is an operator, to branch to an arithmetic function
     beq s1, s5, equals_op_hit
     nop
-    
-    bne s1, s2, not_multiply_op
-    nop
+
     ori a2, zero, 2 //MULT == 2; param for RPN_arithmetic_operation()
+    beq s1, s2, operator_hit
+    nop
     
+    ori a2, zero, 0 //ADD == 0; param for RPN_arithemetic_operation()
+    beq s1, s3, operator_hit
+    nop
     
-//    beq s1, s2, multiply_operator_hit
-//    nop
-//    beq s1, s3, addition_operator_hit
-//    nop
-//    beq s1, s4, subtraction_operator_hit
-//    nop
-//    beq s1, s5, equals_op_hit
-//    nop
-//    
+    ori a2, zero, 1 //SUB == 1; param for RPN_arithemetic_operation()
+    beq s1, s4, operator_hit
+    nop
+   
    //if fall through all the branch on operator checks; 
    //	EXPR[i] stored in $s1 must be operand;
    //	operands should be pushed on stack;
    
     PUSH s1	//push operand in $s1 onto 'stack'
+    
     j increment_expr_pointer
     nop
     
     
 operator_hit:
-    POP a0
     POP a1
+    nop
+    POP a0
+    nop
     jal RPN_arithmetic_operation
     nop
     //push return value from $v0, the product, onto 'stack' 
     PUSH v0
-    
-    
+// fall thru to increment_expr_pointer
+    nop
     //EXPR[s0]
     //$s0 = $s0 + 1 word
 increment_expr_pointer:
@@ -153,8 +171,8 @@ increment_expr_pointer:
     //Store LAB3_RESULT when encounter '=' EQU_OP in switch statement
      //done; what is on stack is answer to LtoR RPN EXPRESSION
 equals_op_hit:
-    POP v0
-    ori s7, v0, 0
+    POP t0
+    ori s7, t0, 0
     la t9, LAB3_RESULT
     sw s7, 0(t9)
 //fall thru to endless loop
