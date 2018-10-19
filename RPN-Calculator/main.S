@@ -18,7 +18,8 @@
     
     
     //Do NOT Grow the stack `upwards`? First In Last Out (FILO)
-//grow stack down by allocating stack-pointer or frame-pointer (sp;fp) down
+        //Mips green sheet says to grow stack downwards LIFO;
+//grow stack down by allocating stack-pointer (sp) down
     // in negative direction (negative offset bytes; smaller/lower addresses)
     .global main
 
@@ -33,38 +34,28 @@
      */
     
     //Left to Right (postfix) Reverse Polish Notation (RPN)
-    //Mips green sheet says to grow stack downwards LIFO; == 11
 //EXPR: .word 3,4,0x80000000 + '*',5,6,0x80000000 + '-',0x80000000 + '+',0x80000000 + '='    
-    //     (3*4) + (5-6)       
     //11 =
+    //infix:(3*4) + (5-6) =
+    //postfix: 3,4,*,5,6,-,+,=
  
-    //Just subtraction WORKS
-  // EXPR: .word 5,6,0x80000000 + '-',0x80000000 + '='    
-//subtraction order is left to right, {5, 6, -} == {5-6}
-    //5-6 = -1
-    
-    //Just addition WORKS
-//EXPR: .word 5,6,0x80000000 + '+',0x80000000 + '=' //=11
-
-  //Just Multiplication WORKS
-  //EXPR: .word 5,6,0x80000000 + '*',0x80000000 + '=' //=30
-
-////infix: (3*4) + 5 = 17
-////Postfix: 3,4, *, 5, +   = 17
-//  EXPR: .word 3,4,0x80000000 + '*',5,0x80000000 + '+',0x80000000 + '='    
-////WORKS == 17
-
-////infix: (3*4) - 5 = 7
-////Postfix: 3,4, *, 5, -   = 7
-//  EXPR: .word 3,4,0x80000000 + '*',5,0x80000000 + '-',0x80000000 + '='    
-////WORKS == 7
-
-  //infix: 3+4 + (5+6)
-  //postfix: 3 4 + 5 6 + +
-EXPR:	.word 3,4,0x80000000 + '+'
-	.word 5,6,0x80000000 + '+'
+EXPR:	.word 3,4,0x80000000 + '*'
+	.word 1,10,0x80000000 + '*'
 	.word 0x80000000 + '+',0x80000000 + '='    
-//= 7+11 = 18? //getting 16???
+//= 42
+   
+	
+	
+	//Error demonstration code:::
+//  //infix: 3+4 + (5+6)
+//  //postfix: 3 4 + 5 6 + +
+//EXPR:	.word 3,4,0x80000000 + '+'
+//	.word 5,6,0x80000000 + '+'
+//	.word 0x80000000 + '+',0x80000000 + '='    
+////= 7+11 = 18? //getting 16, $fp off by one byte on double operator re-entry
+//	//fixed it by doing better offset math OR by using main's $fp to write
+//	// to main's memory.
+	
      //Stored in $s7 for debugging purposes
 LAB3_RESULT: .word 0
    
@@ -156,17 +147,15 @@ loop_eval_symbol:
     
 operator_hit:
     POP a1
-    nop
     POP a0
-    nop
+    
     jal RPN_arithmetic_operation
     nop
     //push return value from $v0, the product/sum/difference, onto 'stack' 
     PUSH v0
-    //POOSH v0 //test to see if this fixes $sp off by one bug, didint ...
 
 // fall thru to increment_expr_pointer
-    nop
+    
     //EXPR[s0]
     //$s0 = $s0 + 1 word
 increment_expr_pointer:

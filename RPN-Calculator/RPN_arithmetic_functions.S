@@ -65,8 +65,8 @@ RPN_arithmetic_operation:
   //frame pointer, because there's no telling how much motion the stack
   //pointer saw before entering execution into this function
   sw a0, 0(fp)
-  sw a1, 4(fp)
-  sw a2, 8(fp)
+  sw a1, 4(fp) //a1 is actually ruined in the multiply label
+  sw a2, 8(fp) //no reason to actually do this; just for learning.
   //that's right. I just reached OUT of my frame, and saved off some data
   addu fp, sp, zero //sets the bottom of our frame
   //end of stack frame construction
@@ -83,7 +83,8 @@ RPN_arithmetic_operation:
  beq a2, zero, RPN_add //$v0 = x + y
  nop
  
- //Now arithemetic functions will return to here
+ //Now arithemetic functions will return to here; 
+ //	copying $t2 into $v0 to make future error checking easier. 
 operation_done:
   addu v0, t2, zero
   
@@ -99,19 +100,40 @@ operation_done:
 
 
 RPN_multiply:
+  //Check if a0 or a1 are == zero; to skip repeated addition
+    beq zero, a0, zero_param
+    nop
+    beq zero, a1, zero_param
+    nop
+    
   addi t3, zero, 1	//placing a 1 into t3 as a conditional control
   addu t2, a0, zero	//taking a copy of x; let's call it temp
+  
+  //Checky if a1, y, is == 1; to skip repeated addition
+  beq a1, t3, y_param_one
+  nop
   
   //Also can't handle negative numbers at all...
   //Still has bugs if either is 0 AND the bug where is y <=one loop is endless
 mult_loop:
-
   addu t2, t2, a0	// temp = temp + x
   addiu a1, a1, -1	// y = y - 1
   beq a1, t3, operation_done
   nop
   j mult_loop
   nop
+  
+  //x or y was a 0, so just set t2 to zero and leave
+  zero_param:
+    move t2, zero
+    j operation_done
+    nop
+    
+    y_param_one:
+    move t2, a0	    //$t2 == x
+    j operation_done
+    nop
+  
 //end RPN_multiply
   
   
