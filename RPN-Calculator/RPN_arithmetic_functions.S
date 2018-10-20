@@ -1,3 +1,14 @@
+/*************************************************************
+* Author:		Joseph Fallon
+* Filename:		RPN_arithmetic_functions.S
+* Date Created:	10/16/2018
+* Modifications:	
+*		10/18/18 Refactoring Prof. Bartholomew code
+*			    to be one big function
+*  		10/19/18 Making RPN_Multiply handle 1,0,
+*		    and -neg# ~5 hours
+*************************************************************
+*/
 #include <xc.h>
 
 .global RPN_arithmetic_operation
@@ -7,30 +18,47 @@
 .set noreorder
 
 .ent RPN_arithmetic_operation
+    /**********************************************************************	
+* Purpose: `RPN_arithmetic_operation` is a leaf-function 
+*    that performs Reverse Polish Notation arithmetic operations $a2{+,-,*} 
+*    on two operands $a0,$a1{signed#} and returns the result $v0{signed#}
+*
+*
+* Param-Registers:
+*			a0 'x', left hand number
+*			a1 'y', right hand number
+*			a2 Operation: 0 == ADD; 1 == SUB; 2 == MULT
+*
+* Return-Registers:
+*			v0  the result of the operation
+*
+* Precondition: 
+* 		Caller function MUST have 12 bytes above $fp reserved
+*		for storing $a0,a1,a2 inside.
+*		Params are assumed to be well formed.
+*     
+*
+* Postcondition: 
+*		$a0,a1,a2 are preserved in Caller stack frame
+*		$v0 is set to operation result
+*		`jr ra` instruction returns
+*
+************************************************************************/
 RPN_arithmetic_operation:
-//  //creating stack frame; error here was off by one word in the hardcoded offset
-//  // memory addresses are inclusive on one side exclusive on the other;
-//  //	negative offset switches this. This is why every textbook has different
-//  //	diagrams in them as to where a pointer actually points.
-//  addiu sp, sp, -8  //making room for two words; $ra and $fp ;
-//		    // downwards into lower memory addresses ;
-//		 //$sp is now two words lower than it was before this function.
-//		    
-//  sw ra, 4(sp)	    //store $ra value into $sp+one word;
-//		    // backup into higher memory addresses with positive offset.
-//  sw fp, 0(sp)	    //store caller $fp at bottom of our stack.
-//  //local variables would be allocated here;
-//  //	you would need to increase the $sp offset for each word variable above,
-//  //	and when this function exits, need to snap $sp back by the same offset
-//  addu fp, sp, zero //sets the bottom of our frame. $fp = new $sp
-//
-//  //Store param registers already-allocated in main's stack frame
-//  sw a0, 12(fp)  //x   //NOT 8 which is what you would think...
-//  sw a1, 16(fp) //y
-//  sw a2, 20(fp) //function op code; *, +, -
-//  
-//  //end of stack frame construction
-//  
+  addiu sp, sp, -8  //move stack pointer down by 2 words, 8 bytes; 
+		    // to lower addresses, 0 inclusive to -8 exclusive
+  sw ra, 4(sp)
+  sw fp, 0(sp)
+  //save main's register parameters before moving the frame pointer
+  //	to simplify indirect addressing offset math.
+  sw a0, 0(fp) //use enter value of $fp to save param reg in main's stack frame
+  sw a1, 4(fp) //a1 is actually ruined in the multiply label, need to save
+  sw a2, 8(fp) //no reason to actually save a2; just for learning.
+  //that's right. I just reached OUT of my frame, and saved off some data
+  addu fp, sp, zero //sets the bottom of our frame
+  //end of stack frame construction
+
+  //  
 //  /* current state of the stack frame
 //     /----------------------/
 //     |          ra          | 20
@@ -43,34 +71,19 @@ RPN_arithmetic_operation:
 //     /----------------------/ 
 //     |  room for a1         |  4
 //     /----------------------/ 
-//     |  room for a0         |  0   $sp on enter; $fp on enter.      (12)
+//     |  room for a0         |  0   $sp on enter; $fp on enter.	(12)
+//     /-- ->>>old $fp--------/
+//     |  RPN $ra	      |  -4					(8)
 //     /----------------------/
-//     |  RPN $ra	            |  -4                                   (8)
+//     |  RPN $fp	      |  -8 //-8 exclusive to -4 inclusive	(4)
 //     /----------------------/
-//     |  RPN $fp	            |  -8 //-8 exclusive to -4 inclusive    (4)
-//     /----------------------/
-//     ---------->$sp and $fp
-//     |  next 'open' mem space| -12				    (0)
+//     ---------->$sp and $fp	    new $sp and $fp after setting a#s
+//     |  next 'open' mem space| -12					(0)
 //     /----------------------/
 //     
 //    */
- 
-    //This is working; changing the $fp early ruins everything; can't even 
-    // debug this horrible mistake...
-  addiu sp, sp, -8  //making room for two things!
-  sw ra, 4(sp)
-  sw fp, 0(sp)
-  //oh look! parameters! better save em!
-  //important note: I saved the a register parameters before moving the
-  //frame pointer, because there's no telling how much motion the stack
-  //pointer saw before entering execution into this function
-  sw a0, 0(fp)
-  sw a1, 4(fp) //a1 is actually ruined in the multiply label
-  sw a2, 8(fp) //no reason to actually do this; just for learning.
-  //that's right. I just reached OUT of my frame, and saved off some data
-  addu fp, sp, zero //sets the bottom of our frame
-  //end of stack frame construction
-    
+
+  
  //Branch to correct function depending on $t7 value
  ori t0, zero, 2  // $t0 == MULT == 2
  ori t1, zero, 1  // $t1 == SUB == 1
@@ -122,7 +135,6 @@ RPN_multiply:
   ori t4, zero, 808 //put 808 flag into
   //fall-thru to mult_loop
   
-  //Also can't handle negative numbers at all...
 mult_loop:
   addu t2, t2, a0	// temp = temp + x
   addiu a1, a1, -1	// y = y - 1
