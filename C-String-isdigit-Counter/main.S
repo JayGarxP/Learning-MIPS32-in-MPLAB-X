@@ -41,8 +41,8 @@ main:
     
     //copy byte of string into $a0
     move a0, t0
-    //save byte of string in $a0 onto main's stack before entering function
-    sw a0, 0(fp)
+    //save byte of string in $a0 onto main's stack after entering function
+    //sw a0, 0(fp) //this is done inside the function
     
     //Call int is_a_digit(char x)
     jal is_a_digit
@@ -68,9 +68,8 @@ increment_digit_counts:
     addi t5, t5, 1 //increment count value
     sw t5, 0(t4)   //store incremented t5 count value
     //load that address; load value; increment value should be zero to start
-    //check if it is zero in debugger first, may have to initialize them all
-    // probably should initialize them all anyway for good luck
-    //store new count value from whence it came
+    //simulator appears to zero out memory for us, but it is bad practice
+    // to assume it will work everytime.
 
     //now increment total digits found
     la t4, count_total

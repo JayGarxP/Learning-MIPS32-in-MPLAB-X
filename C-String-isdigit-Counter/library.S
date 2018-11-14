@@ -58,19 +58,40 @@ done:
     //if ascii digit found, returns the binary digit value; '0x30' == 0
     // else if not in range, returns -1 aka 0xffffffff
 is_a_digit:
-    //stack frame for $a0; use $v0 to return value
-    
+    //stack frame for $a0 char byte; use $v0 to return binary digit value
+    addiu sp, sp, -8
+    sw ra, 4(sp)
+    sw fp, 0(sp)
+    sw a0, 8(sp) //inbound a0 parameter, stored bottom of main's stack frame
+    addu fp, sp, zero
     
     //0x30 == 48 decimal; 0x39 == 57 decimal BTW
     //See the pseudocode, hex and binary are equivalent reprs below 10
-     //if t0 < 0x30, then outside of range;  return -1
-    //if 0x39 < t0, then outside of range on the other side; return -1
+     //if a0 < 0x30, then outside of range;  return -1
+    //if 0x39 < a0, then outside of range on the other side; return -1
     //else, then this MUST be a digit,
     //find out whiche one; return binary digit 0-9
     
-    //rehydrate stackframe, j ra; nop;
+    addi t0, zero, 0x30 //load ASCII '0' into $t0
+    blt a0, t0, is_not_digit //if $a0 byte < ASCII '0'
+    nop
+    addi t1, zero, 0x39
+    blt t1, a0, is_not_digit //if ASCII '9' < $a0 byte 
+    nop
+    sub v0, a0, t0 //return binary value for ASCII; x - 0x30
+    j return_is_a_digit
+    nop
     
-    addi v0, zero, 2
+    is_not_digit:
+    addi v0, zero, -1
+    //fall
+    //thru
+    return_is_a_digit:
+    //rehydrate stackframe, j ra; nop;
+    addu sp, fp, zero
+    lw ra, 4(sp)
+    lw fp, 0(sp)
+    addiu sp, sp, 8
     j ra
     nop
     
