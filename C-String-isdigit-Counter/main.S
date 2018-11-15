@@ -2,10 +2,16 @@
 #include "lab05defines.h"
 
 .global main
-
+ 
 .data
 string: .asciiz "There are 10 kinds of people in the world, those who understand binary and those who don't. The rest of the 0-9 digits are 2, 3, 4, 5, 6, 7, 8, 9."
-
+number_of_msg: .asciiz "Number of Xs: " //replace X@byte 10 with your number char
+total_number_msg: .asciiz "Total number of digits: "
+//10 char + nullterminator '0x00' char array used as $a1 in binary_to_asciidec  
+string_buffer: .space 11
+//newline; with ASCII carriage return '0x0d' then '0x0a'
+newline_msg: .asciiz "\r\n"
+    
 .text
 .set noreorder
 
@@ -82,7 +88,49 @@ increment_digit_counts:
     
 done_parsing:
     //need to start printing things now.
+    //load address of number_of_msg
+    //load byte of 10(number_of_msg address)
+    //set load byte to loop count + 0x30
+    //print 'number of message'
+    //load address of count store
+    //load word of count store
+    // call b_to_a function $a0=loadWordCountStore $a1 = string buffer address
+    //print string buffer
+    //print newline
+    //repeat 9 more times
+    
+    la s0, number_of_msg
+    
+    //re-enter loop here
+    addi t1, zero, 0x30 //add loop count to ASCII digit offset
+    sb t1, 10(s0) //store $t1 ASCII loop index to tenth char in number_of_msg
+  
+    //Print "Number of #s: "
+    move a0, s0 
+     jal output_string
+    nop
+    
+    //Prep to Print the digit count
+    la t0, count_0 //load address of current count stack var
+    lw t0, 0(t0)
+    
+    move a0, t0 // $a0 = $t0 binary digit count
+    la a1, string_buffer //load address of char[11] into $a1
 
+    //void binary_to_asciidec(binary #, char* buffer)
+    jal binary_to_asciidec
+    nop
+    
+    //Print count value
+    move a0, a1 //$a0 param for output_string = $a1 string buffer 
+     jal output_string
+    nop
+    
+    //Print newline; with ASCII carriage return '0x0d' then '0x0a'
+    la a0, newline_msg
+     jal output_string
+    nop
+    
     //How to print what's in $a0, just call output_string; boom done
    // jal output_string
  // nop

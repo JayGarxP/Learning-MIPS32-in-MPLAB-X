@@ -1,9 +1,22 @@
 #include <xc.h>
 
+    //stack pointer down; lower address
+    .macro PUSH reg
+    addiu sp, sp, -4
+    sw \reg, 0(sp)
+    .endm
+    
+    //stack pointer up; higher address
+    .macro POP reg
+    lw \reg, 0(sp)
+    addiu sp, sp, 4
+    .endm
+    
 .global output_string
 .global is_a_digit
 .global binary_to_asciidec 
 //The three required functions for lab5: count digits in asciiz string
+    
     
 .ent output_string
    
@@ -11,12 +24,14 @@
     //Prints to I/O UART1 Output Window
     //Returns void
 output_string:
-
     //called function stack frame
-    addiu sp, sp, -8
-    sw ra, 4(sp)
-    sw fp, 0(sp)
-    sw a0, 8(sp) //inbount a0 parameter, stored in calling function's stack frame
+    addiu sp, sp, -20
+    sw ra, 16(sp)
+    sw fp, 12(sp)
+    sw s2, 8(sp)
+    sw s1, 4(sp)
+    sw s0, 0(sp)
+    sw a0, 20(sp) //inbount a0 parameter, stored in calling function's stack frame
     addu fp, sp, zero
 
 get_byte:
@@ -38,12 +53,15 @@ next:
     j get_byte
     nop
 done:
-
     //called function stack frame wind-up
     addu sp, fp, zero
-    lw ra, 4(sp)
-    lw fp, 0(sp)
-    addiu sp, sp, 8
+    lw ra, 16(sp)
+    lw fp, 12(sp)
+    lw s2, 8(sp)
+    lw s1, 4(sp)
+    lw s0, 0(sp)
+    addiu sp, sp, 20
+   
     //now we've restored all we need; time to go
     jr ra
     nop
@@ -107,6 +125,39 @@ is_a_digit:
     //TO convert the binary value passed in $a0 to an ASCII-decimal
     //	null-terminated string held in a byte array at address provided in $a1
     //returns void
+    //see link for more information
+    //https://www.electronics-tutorials.ws/binary/bin_2.html
 binary_to_asciidec:
+    
+    addiu sp, sp, -8
+    sw ra, 4(sp)
+    sw fp, 0(sp)
+    sw a0, 8(sp) //inbound a0 parameter, stored bottom of main's stack frame
+    sw a1, 12(sp)
+    addu fp, sp, zero
+    
+    //divu until no quotient left
+    move t0, a0 //copy binary number into $t0
+    addi t1, zero, 10 //$t1 = 10
+    
+    divu t0, t1
+    //push remainder onto stack
+    //repeat division with quotient / 10
+    mflo t2 //$t2 = quotient
+    mfhi t3 //$t3 = remainder
+    
+    addi t3, t3, 0x30 //add ASCII offset to mod10 remainder
+    //write to a1 buffer TEST
+    sb t3, 0(a1)
+    sb zero, 1(a1) //append null
+    
+     //rehydrate stackframe, j ra; nop;
+    addu sp, fp, zero
+    lw ra, 4(sp)
+    lw fp, 0(sp)
+    addiu sp, sp, 8
+    j ra
+    nop
+    
     
 .end binary_to_asciidec
