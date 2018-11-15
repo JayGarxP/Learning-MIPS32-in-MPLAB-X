@@ -125,10 +125,11 @@ is_a_digit:
     //TO convert the binary value passed in $a0 to an ASCII-decimal
     //	null-terminated string held in a byte array at address provided in $a1
     //returns void
-    //see link for more information
+    //see link for more information; if algo in lab handout is wonky
     //https://www.electronics-tutorials.ws/binary/bin_2.html
+    //But know that divu is doing the work for us
 binary_to_asciidec:
-    
+    //stack frame, reaches into main to store params
     addiu sp, sp, -8
     sw ra, 4(sp)
     sw fp, 0(sp)
@@ -139,7 +140,9 @@ binary_to_asciidec:
     //divu until no quotient left
     move t0, a0 //copy binary number into $t0
     addi t1, zero, 10 //$t1 = 10
+    move t9, zero //$t9 is stack size; starts at 0 
     
+    divide_by_ten:
     divu t0, t1
     //push remainder onto stack
     //repeat division with quotient / 10
@@ -147,9 +150,49 @@ binary_to_asciidec:
     mfhi t3 //$t3 = remainder
     
     addi t3, t3, 0x30 //add ASCII offset to mod10 remainder
-    //write to a1 buffer TEST
-    sb t3, 0(a1)
-    sb zero, 1(a1) //append null
+    // push $t3 remainder to stack!
+    PUSH t3
+    //increment stack size count $t9
+    addi t9, t9, 1
+    
+    //branch to write_to_buffer if divu quotient == 0
+    beq t2, zero, write_to_buffer
+    nop
+    //Otherwise, divide by ten again UNLESS # is too big 9 digits+
+    addi t8, t8, 9 //$t8 = 9
+    beq t9, t8, write_to_buffer
+    nop
+    // set dividend to quotient
+    move t0, t2
+    j divide_by_ten
+    nop
+    
+    write_to_buffer:
+    //write to a1 buffer
+    move t0, a1 //$t0 is copy of a1 str_buf address
+    
+    store_stack_byte:
+    POP t2
+    //decrement stack size
+    addi t9, t9, -1
+    
+    //write to string buffer popped stack value $t2 at offset $t0 
+    sb t2, 0(t0)
+    
+    //increment byte-offset $t0 into $a1 str_buf
+    addi t0, t0, 1
+    
+    //check stack size; if empty append null and return, else write next char
+    beq t9, zero, binary_to_ascii_return
+    nop
+    //else
+    // store the next digit as ASCII
+    j store_stack_byte
+    nop
+
+    
+    binary_to_ascii_return:
+    sb zero, 0(t0) //append null '0x00'
     
      //rehydrate stackframe, j ra; nop;
     addu sp, fp, zero

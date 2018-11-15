@@ -98,23 +98,28 @@ done_parsing:
     //print string buffer
     //print newline
     //repeat 9 more times
-    
-    la s0, number_of_msg
+    addi s4, zero, 10 //for loop counter $s4, do ten times
+    addi s5, zero, 0 //for loop index
+    la s0, number_of_msg //load address of "Number of..."
     
     //re-enter loop here
-    addi t1, zero, 0x30 //add loop count to ASCII digit offset
-    sb t1, 10(s0) //store $t1 ASCII loop index to tenth char in number_of_msg
+    print_numbers_count:
+    addi t4, s5, 0x30 //add loop index to ASCII digit offset
+    sb t4, 10(s0) //store $t1 ASCII loop index to tenth char in number_of_msg
   
     //Print "Number of #s: "
-    move a0, s0 
-     jal output_string
+    move a0, s0 //copy address of "Number of ..." to a0 param for output_string 
+    jal output_string
     nop
     
-    //Prep to Print the digit count
-    la t0, count_0 //load address of current count stack var
-    lw t0, 0(t0)
+    //load address of bottom stack frame count var zero
+    la t4, count_0
+//multiply loop-index $s5 by 4 bytes to get address of current count var    
+    mul t5, s5, 4
+    add t4, t4, t5 //offset from count_0 address by pointer offset value
+    lw t6, 0(t4)    // load the count value found at pointer+offset address
     
-    move a0, t0 // $a0 = $t0 binary digit count
+    move a0, t6 // $a0 = $t6 binary digit count; move t6 into a0
     la a1, string_buffer //load address of char[11] into $a1
 
     //void binary_to_asciidec(binary #, char* buffer)
@@ -122,7 +127,7 @@ done_parsing:
     nop
     
     //Print count value
-    move a0, a1 //$a0 param for output_string = $a1 string buffer 
+    move a0, a1 //$a0 param for output_string = $a1 string buffer just set 
      jal output_string
     nop
     
@@ -131,10 +136,17 @@ done_parsing:
      jal output_string
     nop
     
-    //How to print what's in $a0, just call output_string; boom done
-   // jal output_string
- // nop
- 
+    //increment loop index $s5; decrement loop counter $s4
+    addi s5, s5, 1
+    addi s4, s4, -1
+    
+    bne s4, zero, print_numbers_count
+    nop
+
+    la a0, newline_msg //not needed; just 2 clarify printing extra newline
+     jal output_string
+    nop
+    
  //TODO: print end transimission after printing everything + newline
 
 endless:
